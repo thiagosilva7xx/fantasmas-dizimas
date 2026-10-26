@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caça-Fantasmas das Dízimas</title>
+<style>
+:root{
+  --bg1:#140a24; --bg2:#2a1245; --card:#21103a; --card2:#2d1650; --line:#4a2b78;
+  --txt:#f4eefc; --mut:#b9a8d6; --org:#ff8a1f; --org2:#ffb347; --slime:#9be564;
+  --bad:#ff5d73; --good:#58d68d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:"Trebuchet MS","Ubuntu","DejaVu Sans",system-ui,sans-serif;
+  color:var(--txt);
+  background:radial-gradient(1100px 650px at 85% -10%,rgba(120,50,190,.35),transparent),
+             linear-gradient(160deg,var(--bg1),var(--bg2));
+  min-height:100vh;
+}
+button{font-family:inherit}
+[hidden]{display:none !important}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;border-bottom:1px solid var(--line);background:rgba(20,10,36,.6)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;letter-spacing:.3px}
+.brand span{color:var(--org2)}
+.hud{display:flex;gap:22px;color:var(--mut);font-size:1rem;flex-wrap:wrap;}
+.hud b{color:var(--txt);font-size:1.25rem;margin-left:4px}
+.ghostbtn{background:transparent;border:1px solid var(--line);color:var(--mut);padding:6px 12px;border-radius:999px;cursor:pointer;font-size:.85rem}
+.ghostbtn:hover{border-color:var(--org);color:var(--txt)}
+
+main{max-width:1000px;margin:0 auto;padding:22px 20px 40px}
+.screen{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+h1{font-size:clamp(2rem,4.6vw,3.2rem);margin:.2em 0 .1em;line-height:1.1}
+h1 em{font-style:normal;color:var(--org)}
+.lead{color:var(--mut);font-size:1.15rem;margin:0 0 18px}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 22px}
+.grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+
+label{display:block;font-size:.95rem;color:var(--mut);margin:12px 0 4px}
+input[type=text]{width:100%;padding:12px 14px;font-size:1.15rem;border-radius:12px;border:2px solid var(--line);background:#170b2b;color:var(--txt);font-family:inherit}
+input[type=text]:focus{outline:none;border-color:var(--org)}
+.btn{background:linear-gradient(180deg,var(--org2),var(--org));color:#2a1245;font-weight:700;font-size:1.2rem;border:none;border-radius:14px;padding:14px 26px;cursor:pointer;box-shadow:0 4px 0 #b25a0a}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b25a0a}
+.btn.sec{background:var(--card2);color:var(--txt);box-shadow:0 4px 0 #170b2b;border:1px solid var(--line)}
+.howto{margin:14px 0 0;padding-left:20px;color:var(--mut);line-height:1.6}
+.howto b{color:var(--txt)}
+.legend{margin-top:14px;padding:12px 14px;border-radius:12px;background:#170b2b;border:1px dashed var(--line);color:var(--mut);font-size:1rem}
+.legend .ex{color:var(--txt);font-size:1.25rem}
+h3{margin:0 0 8px;font-size:1.1rem;color:var(--org2)}
+ol.rank{margin:0;padding-left:26px}
+ol.rank li{padding:5px 0;border-bottom:1px solid rgba(74,43,120,.5);display:flex;justify-content:space-between;gap:10px}
+ol.rank li.me{color:var(--slime);font-weight:700}
+ol.rank .pts{font-variant-numeric:tabular-nums}
+.empty{color:var(--mut);font-size:.95rem}
+
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.dots i{width:22px;height:8px;border-radius:5px;background:#3a1f66}
+.dots i.cur{background:var(--org2)}
+.dots i.ok{background:var(--good)}
+.dots i.no{background:var(--bad)}
+.timerbar{height:8px;border-radius:6px;background:#170b2b;border:1px solid var(--line);overflow:hidden;margin-bottom:16px}
+.timerbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--slime),var(--org2));transition:width .1s linear}
+.timerbar i.low{background:linear-gradient(90deg,var(--bad),var(--org))}
+.stage{display:flex;gap:20px;align-items:center}
+.ghostwrap{flex:none;width:140px;text-align:center}
+#ghost{animation:float 3s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#ghost.poof{animation:poof .6s ease forwards}
+@keyframes poof{to{transform:translateY(-40px) scale(.2);opacity:0}}
+#ghost.laugh{animation:shake .5s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-5deg)}40%{transform:translateX(10px) rotate(5deg)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.qcard{flex:1;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 24px;position:relative}
+.qcard:before{content:"";position:absolute;left:-10px;top:50%;margin-top:-10px;border:10px solid transparent;border-left:0;border-right-color:var(--line)}
+.phasetag{display:inline-block;font-size:.85rem;color:#2a1245;background:var(--slime);padding:3px 10px;border-radius:999px;font-weight:700;margin-bottom:8px}
+.prompt{font-size:clamp(1.15rem,2.2vw,1.55rem);line-height:1.5}
+.big{font-size:clamp(2.2rem,5vw,3.6rem);font-weight:700;color:var(--org2);margin:6px 0;letter-spacing:1px}
+.note{margin-top:8px;font-size:.88rem;color:var(--mut)}
+@media(max-width:700px){.stage{flex-direction:column}.qcard:before{display:none}}
+
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}
+@media(max-width:700px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;align-items:center;gap:14px;background:var(--card2);border:2px solid var(--line);color:var(--txt);border-radius:16px;padding:14px 18px;font-size:clamp(1.3rem,2.6vw,2.2rem);cursor:pointer;min-height:84px;text-align:left}
+.opt:hover:not(:disabled){border-color:var(--org);transform:translateY(-2px)}
+.opt:disabled{cursor:default;color:var(--txt)}
+.opt .key{flex:none;width:34px;height:34px;border-radius:10px;background:#3a1f66;color:var(--org2);display:grid;place-items:center;font-size:1rem;font-weight:700}
+.opt.ok{background:#1f5a3a;border-color:var(--good)}
+.opt.no{background:#5a1f33;border-color:var(--bad)}
+
+.feedback{margin-top:18px;border-radius:16px;padding:16px 20px;background:var(--card);border:2px solid var(--line);font-size:1.1rem;line-height:1.7}
+.feedback.good{border-color:var(--good)}
+.feedback.bad{border-color:var(--bad)}
+.feedback .ft{font-size:1.35rem;font-weight:700;margin-bottom:4px}
+.feedback.good .ft{color:var(--good)}
+.feedback.bad .ft{color:var(--bad)}
+.feedback .pts{color:var(--mut);font-size:.95rem}
+.feedback .btn{margin-top:12px}
+
+.intro{text-align:center;padding:40px 20px}
+.intro .num{color:var(--slime);font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.intro h2{font-size:clamp(2rem,5vw,3.2rem);margin:.2em 0;color:var(--org2)}
+.intro p{font-size:1.25rem;color:var(--mut);max-width:620px;margin:0 auto 24px}
+
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.15;margin:0 .12em}
+.fr .n{border-bottom:.08em solid currentColor;padding:0 .3em .05em}
+.fr .d{padding:.05em .3em 0}
+.per{display:inline-block;border-top:.09em solid currentColor;padding-top:.02em;line-height:1.05}
+
+.score{font-size:clamp(2.6rem,7vw,4.4rem);font-weight:700;color:var(--org2);line-height:1}
+.stars{font-size:2.2rem;color:var(--org2);letter-spacing:4px}
+.stars .off{color:#4a2b78}
+.rowph{display:grid;grid-template-columns:200px 1fr 50px;gap:10px;align-items:center;padding:5px 0}
+.rowph .bar{height:12px;background:#170b2b;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.rowph .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--slime),var(--org2))}
+@media(max-width:640px){.rowph{grid-template-columns:1fr 80px 40px}}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+/* ===== Halloween: efeitos, maldições, bruxa ===== */
+.opts{position:relative}
+.hud .flame{width:18px;height:22px;vertical-align:-5px;margin-left:5px;display:none}
+.hud .hot .flame{display:inline-block;animation:flick .45s ease-in-out infinite alternate}
+.hud .hot b{color:var(--org2);text-shadow:0 0 12px var(--org)}
+@keyframes flick{from{transform:scale(1) rotate(-5deg)}to{transform:scale(1.2) rotate(5deg)}}
+.hbtns{display:flex;gap:8px}
+.hbtns .ghostbtn{white-space:nowrap}
+
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+.fxBanner{position:absolute;left:50%;top:18%;text-align:center;animation:banner 2s ease forwards;white-space:nowrap}
+.fxBanner .t{font-size:clamp(2.2rem,7vw,4.6rem);font-weight:900;color:var(--org2);letter-spacing:3px;text-shadow:0 0 22px var(--org),0 5px 0 #6b2f00}
+.fxBanner .s{font-size:clamp(1.1rem,3vw,1.9rem);font-weight:700;color:var(--slime);text-shadow:0 2px 8px #000}
+.fxBanner.lost .t{color:var(--bad);text-shadow:0 0 18px #a01030,0 4px 0 #4a0a1c;font-size:clamp(1.6rem,5vw,3rem)}
+.fxBanner.lost .s{color:var(--mut)}
+@keyframes banner{0%{opacity:0;transform:translateX(-50%) scale(.3)}14%{opacity:1;transform:translateX(-50%) scale(1.18)}24%{transform:translateX(-50%) scale(1)}78%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-34px) scale(1)}}
+.fxP{position:absolute;left:50%;top:38%;width:var(--s,48px);height:var(--s,48px);animation:burst 1.4s cubic-bezier(.15,.75,.3,1) forwards}
+.fxP svg,.fxBat svg,.fxGhost svg,.fxMoon svg{width:100%;height:100%;display:block}
+@keyframes burst{0%{transform:translate(-50%,-50%) scale(.2) rotate(0);opacity:1}70%{opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1) rotate(var(--rot));opacity:0}}
+.fxBat{position:absolute;left:0;width:72px;height:36px;animation:batfly var(--dur,2.6s) linear forwards}
+.fxBat.rtl{animation-name:batflyr}
+.fxBat svg{animation:flap .2s ease-in-out infinite alternate}
+@keyframes batfly{from{transform:translate(-120px,0)}to{transform:translate(calc(100vw + 120px),var(--dy,0px))}}
+@keyframes batflyr{from{transform:translate(calc(100vw + 120px),0) scaleX(-1)}to{transform:translate(-120px,var(--dy,0px)) scaleX(-1)}}
+@keyframes flap{from{transform:scaleY(1)}to{transform:scaleY(.4)}}
+.fxGhost{position:absolute;bottom:-120px;width:70px;height:82px;opacity:.9;animation:ghostup var(--dur,2.4s) ease-in forwards}
+@keyframes ghostup{to{transform:translate(var(--dx,0),-110vh) rotate(var(--rot,0deg));opacity:0}}
+.fxMoon{position:absolute;right:8%;top:6%;width:min(26vw,220px);height:min(26vw,220px);filter:drop-shadow(0 0 30px rgba(255,240,170,.8));animation:moon 2.6s ease forwards}
+@keyframes moon{0%{opacity:0;transform:scale(.3) translateY(60px)}20%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.1)}}
+.fxFlash{position:absolute;inset:0;background:#fff;opacity:0;animation:flash .7s ease forwards}
+@keyframes flash{0%{opacity:0}8%{opacity:.75}18%{opacity:.05}30%{opacity:.55}100%{opacity:0}}
+
+/* maldição: névoa no enunciado */
+.qcard.fog .prompt{filter:blur(22px) brightness(.25);opacity:.55;transition:filter .12s;user-select:none}
+.qcard.fog:hover .prompt{filter:none;opacity:1}
+.qcard.fog:after{content:"Névoa! Passe o mouse para ver o enunciado";position:absolute;left:12px;right:12px;top:55%;transform:translateY(-50%);text-align:center;color:var(--org2);font-weight:700;font-size:1.2rem;pointer-events:none;text-shadow:0 2px 8px #000}
+.qcard.fog:hover:after{display:none}
+.curse{display:inline-block;margin-left:8px;font-size:.85rem;color:#2a1245;background:var(--org2);padding:3px 10px;border-radius:999px;font-weight:700;animation:pulse .9s ease-in-out infinite alternate}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.08)}}
+/* maldição: morcegos sobre as alternativas */
+.cbat{position:absolute;z-index:5;width:78px;height:42px;cursor:crosshair;animation:cbat var(--dur,8s) linear infinite alternate;touch-action:none}
+.cbat .w{width:100%;height:100%;animation:wob 1.1s ease-in-out infinite alternate}
+.cbat svg{width:100%;height:100%;display:block;animation:flap .2s ease-in-out infinite alternate;filter:drop-shadow(0 0 6px rgba(150,90,255,.7))}
+@keyframes cbat{from{left:-90px}to{left:calc(100% + 10px)}}
+@keyframes wob{from{transform:translateY(-16px)}to{transform:translateY(16px)}}
+@keyframes batdie{to{transform:scale(0) rotate(540deg);opacity:0}}
+
+/* tela da bruxa */
+#witch{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(900px 600px at 50% 35%,#4a1470,#0a0414 70%);overflow:hidden}
+#witch:before{content:"";position:absolute;inset:0;background:#d9c2ff;opacity:0;animation:flash 2.4s ease 0s 2;pointer-events:none}
+.wbox{position:relative;text-align:center;padding:10px 20px;max-width:640px}
+.wbox h2{margin:6px 0 4px;font-size:clamp(1.8rem,5vw,2.8rem);color:var(--bad);text-shadow:0 0 18px #a01030}
+.wbox p{margin:0 0 16px;color:var(--mut);font-size:1.2rem}
+#witchSvg{width:min(60vw,300px);height:auto;overflow:visible}
+#wHead{transform-origin:152px 215px;animation:wshake .3s ease-in-out infinite alternate}
+@keyframes wshake{from{transform:rotate(-5deg) translateY(0)}to{transform:rotate(5deg) translateY(-6px)}}
+#wMouth{transform-box:fill-box;transform-origin:50% 0;animation:wmouth .24s ease-in-out infinite alternate}
+@keyframes wmouth{from{transform:scaleY(.55)}to{transform:scaleY(1.05)}}
+.wha{position:absolute;font-weight:900;color:var(--slime);text-shadow:0 0 12px #3a8a10,0 3px 0 #1d4a08;font-size:clamp(1.6rem,5vw,3rem);animation:wha 1.5s ease-out forwards;pointer-events:none}
+@keyframes wha{0%{opacity:0;transform:scale(.3) rotate(var(--r,0deg))}20%{opacity:1;transform:scale(1.2) rotate(var(--r,0deg))}100%{opacity:0;transform:translateY(-70px) scale(1) rotate(var(--r,0deg))}}
+
+/* ===== Ranking: abas, exportar/importar, placar das turmas ===== */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{background:#170b2b;border:1px solid var(--line);color:var(--mut);padding:5px 12px;border-radius:999px;cursor:pointer;font-size:.85rem;font-family:inherit}
+.tabs button:hover{border-color:var(--org);color:var(--txt)}
+.tabs button.on{background:var(--org);border-color:var(--org);color:#2a1245;font-weight:700}
+.rkbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#rkMsg{min-height:1.2em;margin-top:8px}
+#rkMsg.bad{color:var(--bad)} #rkMsg.good{color:var(--slime)}
+table.cmp{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+table.cmp th{color:var(--mut);font-weight:400;font-size:.9rem;text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)}
+table.cmp td{padding:8px;text-align:right;border-bottom:1px solid rgba(74,43,120,.5);font-size:1.05rem}
+table.cmp th:first-child,table.cmp td:first-child{text-align:left}
+table.cmp tr.lead td{color:var(--slime);font-weight:700;font-size:1.2rem}
+
+select{width:100%;padding:12px 14px;font-size:1.15rem;border-radius:12px;border:2px solid var(--line);background:#170b2b;color:var(--txt);font-family:inherit}
+select:focus{outline:none;border-color:var(--org)}
+.msgbad{color:var(--bad);min-height:1.2em;margin-top:8px}
+ol.rank .tg{color:#b9a8d6;font-size:.8em;margin-left:6px}
+@media (hover:none){ .qcard.fog:after{content:"Névoa! Toque aqui para ver o enunciado"} }
+.qcard.fog.seen .prompt{filter:none;opacity:1}
+.qcard.fog.seen:after{display:none}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="sv-bat" viewBox="0 0 100 50">
+      <g fill="#07020f" stroke="#a97cf5" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M46 22 C34 8 14 8 2 20 C9 21 13 25 15 31 C19 27 25 27 29 33 C33 29 39 30 44 38 Z"/>
+        <path d="M54 22 C66 8 86 8 98 20 C91 21 87 25 85 31 C81 27 75 27 71 33 C67 29 61 30 56 38 Z"/>
+        <ellipse cx="50" cy="28" rx="7" ry="12"/>
+        <path d="M44 20 L45 8 L50 15 L55 8 L56 20 Z"/>
+      </g>
+      <circle cx="47" cy="23" r="1.8" fill="#ffb347"/><circle cx="53" cy="23" r="1.8" fill="#ffb347"/>
+    </symbol>
+    <symbol id="sv-pumpkin" viewBox="0 0 40 40">
+      <ellipse cx="14" cy="23" rx="11" ry="13" fill="#ff8a1f"/>
+      <ellipse cx="26" cy="23" rx="11" ry="13" fill="#ff8a1f"/>
+      <ellipse cx="20" cy="23" rx="8" ry="14" fill="#ffa23f"/>
+      <rect x="18" y="5" width="4" height="7" rx="1.5" fill="#6bbf3a"/>
+      <path d="M13 21l3 4h-6zM27 21l3 4h-6zM13 31q7 5 14 0z" fill="#2a1245" stroke="#2a1245" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="sv-ghost" viewBox="0 0 120 140">
+      <path d="M20 130 V60 C20 25 40 8 60 8 C80 8 100 25 100 60 V130 L88 118 L74 132 L60 118 L46 132 L32 118 Z" fill="#f4eefc"/>
+      <ellipse cx="46" cy="58" rx="7" ry="10" fill="#21103a"/><ellipse cx="74" cy="58" rx="7" ry="10" fill="#21103a"/>
+      <ellipse cx="60" cy="88" rx="9" ry="12" fill="#21103a"/>
+    </symbol>
+    <symbol id="sv-moon" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="#fff4c2"/>
+      <circle cx="34" cy="36" r="8" fill="#eed98a"/><circle cx="62" cy="58" r="11" fill="#eed98a"/>
+      <circle cx="40" cy="68" r="5" fill="#eed98a"/><circle cx="68" cy="30" r="4" fill="#eed98a"/>
+    </symbol>
+    <symbol id="sv-flame" viewBox="0 0 24 30">
+      <path d="M12 0 C14 8 22 12 22 21 C22 27 17 30 12 30 C7 30 2 27 2 21 C2 16 6 14 7 9 C9 11 10 12 11 13 C11 8 11 4 12 0 Z" fill="#ff8a1f"/>
+      <path d="M12 14 C13 18 17 19 17 23 C17 26 15 28 12 28 C9 28 7 26 7 23 C7 20 11 19 12 14 Z" fill="#ffd66b"/>
+    </symbol>
+  </defs>
+</svg>
+<div id="fx" aria-hidden="true"></div>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
+      <ellipse cx="14" cy="23" rx="11" ry="13" fill="#ff8a1f"/>
+      <ellipse cx="26" cy="23" rx="11" ry="13" fill="#ff8a1f"/>
+      <ellipse cx="20" cy="23" rx="8" ry="14" fill="#ffa23f"/>
+      <rect x="18" y="5" width="4" height="7" rx="1.5" fill="#6bbf3a"/>
+      <path d="M13 21l3 4h-6zM27 21l3 4h-6zM13 31q7 5 14 0z" fill="#2a1245" stroke="#2a1245" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
+    <span>Caça-Fantasmas das Dízimas</span>
+  </div>
+  <div class="hud" id="hud" hidden>
+    <div><span id="hPhaseLbl">Fase</span> <b id="hPhase">1</b><span id="hPhaseTot">/4</span></div>
+    <div>Pontos <b id="hScore">0</b></div>
+    <div id="hStreakBox">Sequência <b id="hStreak">0</b><svg class="flame" aria-hidden="true"><use href="#sv-flame" width="100%" height="100%"/></svg></div>
+    <div id="hLivesBox" hidden>Vidas <b id="hLives">2</b><span style="color:var(--bad)"> ❤️</span></div>
+  </div>
+  <div class="hbtns">
+    <button class="ghostbtn" id="musicBtn" type="button">Música: ligada</button>
+    <button class="ghostbtn" id="muteBtn" type="button">Som: ligado</button>
+  </div>
+</header>
+
+<main>
+  <section id="start" class="screen">
+    <h1>Caça-<em>Fantasmas</em> das Dízimas</h1>
+    <p class="lead">Capture os fantasmas resolvendo desafios com números decimais e fração geratriz.</p>
+    <div class="grid2">
+      <div class="panel">
+        <label for="inNome">Seu nome ou apelido</label>
+        <input type="text" id="inNome" maxlength="32" autocomplete="off" placeholder="Ex.: Ana S.">
+        <div class="note" id="nomeHint" hidden>O nome aparece no ranking online para toda a turma: use só o primeiro nome ou um apelido.</div>
+        <div id="turmaBox" hidden>
+          <label for="selTurma">Sua turma</label>
+          <select id="selTurma"><option value="">Escolha sua turma…</option></select>
+        </div>
+        <label for="inEquipe">Nome da equipe (opcional)</label>
+        <input type="text" id="inEquipe" maxlength="24" autocomplete="off" placeholder="Ex.: Os Morcegos">
+        
+        <div class="msgbad" id="startMsg"></div>
+        <div class="btn-group">
+          <button class="btn" id="btnPlayNormal" type="button">Modo Clássico (20 Qs)</button>
+          <button class="btn sec" id="btnPlayInf" type="button">Modo Infinito (sem limite)</button>
+        </div>
+        
+        <ul class="howto">
+          <li><b>Modo Clássico:</b> 20 desafios, sem limite de tempo (responder rápido dá pontos extras).</li>
+          <li><b>Modo Infinito:</b> perguntas de todas as fases embaralhadas, sem tempo limite (mas responda rápido para ganhar mais pontos!). Você tem 2 vidas e não existe teto de acertos: o jogo só acaba quando as vidas acabarem. Quem aguentar mais, vence!</li>
+          <li><b>Maldições (só no Infinito):</b> às vezes uma <b>névoa</b> esconde o enunciado (passe o mouse por cima!) ou <b>morcegos</b> voam sobre as alternativas (clique neles para espantar).</li>
+          <li>Escolha a resposta clicando ou apertando <b>1, 2, 3 ou 4</b>.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Ranking</h3>
+        <div class="tabs" id="rkMain" hidden></div>
+        <div id="onView" hidden>
+          <div class="tabs" id="onMode"></div>
+          <div class="tabs" id="onTurma"></div>
+          <div id="onList"></div>
+          <div class="note" id="onStatus"></div>
+        </div>
+        <div id="locView">
+        <div class="tabs" id="rkTabs"></div>
+        <div id="rankStart"></div>
+        <div class="rkbar">
+          <button class="ghostbtn" id="btnExp" type="button">Exportar ranking</button>
+          <button class="ghostbtn" id="btnImp" type="button">Importar ranking</button>
+          <input type="file" id="fileImp" accept=".json,application/json" multiple hidden>
+          <button class="ghostbtn" id="btnClear" type="button">Limpar ranking</button>
+          <button class="ghostbtn" id="btnDelBoard" type="button" hidden>Remover este placar</button>
+        </div>
+        <div class="note" id="rkMsg"></div>
+        <label for="inTurma">Nome da turma deste computador</label>
+        <input type="text" id="inTurma" maxlength="24" autocomplete="off" placeholder="Ex.: Turma 601">
+        </div>
+      </div>
+    </div>
+    <div class="panel" id="cmpPanel" hidden style="margin-top:20px">
+      <h3>Placar das turmas</h3>
+      <table class="cmp"><thead><tr><th>Turma</th><th>Jogadores</th><th>Melhor</th><th>Média</th></tr></thead><tbody id="cmpBody"></tbody></table>
+      <div class="note">Média = média da melhor pontuação de cada jogador. A turma com a maior média fica na frente.</div>
+    </div>
+  </section>
+
+  <section id="game" class="screen" hidden>
+    <div id="intro" class="intro panel" hidden>
+      <div class="num" id="iNum"></div>
+      <h2 id="iName"></h2>
+      <p id="iDesc"></p>
+      <button class="btn" id="btnGo" type="button">Vamos!</button>
+    </div>
+    <div id="play">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div class="dots" id="dots"></div>
+        <button class="ghostbtn" id="btnStop" type="button" hidden style="flex:none">Encerrar e salvar</button>
+      </div>
+      
+      <div class="stage">
+        <div class="ghostwrap">
+          <svg id="ghost" viewBox="0 0 120 140" width="130" height="150" aria-hidden="true">
+            <path d="M20 130 V60 C20 25 40 8 60 8 C80 8 100 25 100 60 V130 L88 118 L74 132 L60 118 L46 132 L32 118 Z" fill="#f4eefc"/>
+            <ellipse cx="46" cy="58" rx="7" ry="10" fill="#21103a"/>
+            <ellipse cx="74" cy="58" rx="7" ry="10" fill="#21103a"/>
+            <ellipse cx="60" cy="88" rx="9" ry="12" fill="#21103a"/>
+            <ellipse cx="30" cy="76" rx="7" ry="4" fill="#ffb3c1" opacity=".7"/>
+            <ellipse cx="90" cy="76" rx="7" ry="4" fill="#ffb3c1" opacity=".7"/>
+          </svg>
+        </div>
+        <div class="qcard" id="qcard">
+          <span class="phasetag" id="phaseTag"></span><span class="curse" id="curseTag" hidden></span>
+          <div class="prompt" id="prompt"></div>
+          <div class="note">Traço em cima = período (algarismos que se repetem). Ex.: 0,<span class="per">3</span> = 0,333…</div>
+        </div>
+      </div>
+      <div class="opts" id="opts"></div>
+      <div class="feedback" id="fb" hidden>
+        <div class="ft" id="fbTitle"></div>
+        <div id="fbText"></div>
+        <div class="pts" id="fbPts"></div>
+        <button class="btn" id="nextBtn" type="button">Próximo</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="end" class="screen" hidden>
+    <div class="grid2">
+      <div class="panel">
+        <div style="color:var(--mut)" id="eWho"></div>
+        <div class="score" id="eScore"></div>
+        <div style="color:var(--mut);margin:4px 0 8px" id="eHits"></div>
+        <div class="stars" id="eStars"></div>
+        <h2 style="margin:10px 0 2px;color:var(--slime)" id="eTitle"></h2>
+        <p style="color:var(--mut);margin:0 0 6px" id="eMsg"></p>
+        <div class="note" id="sendStatus" style="margin:0 0 14px"></div>
+        <h3>Desempenho por fase</h3>
+        <div id="ePhases"></div>
+        <div class="actions">
+          <button class="btn sec" id="btnHome" type="button">Voltar ao início</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 id="rankEndTitle">Ranking deste computador</h3>
+        <div class="note" id="ePos"></div>
+        <div id="rankEnd"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="witch" hidden>
+  <div class="wbox" id="wbox">
+    <svg id="witchSvg" viewBox="0 0 300 360" aria-hidden="true">
+      <path d="M62 360 C70 300 105 272 152 272 C199 272 234 300 242 360 Z" fill="#1a0a30" stroke="#7a4fc0" stroke-width="3"/>
+      <path d="M120 276 L152 312 L184 276 Z" fill="#6b2fb0"/>
+      <g id="wHead">
+        <path d="M70 175 C48 205 40 240 52 275 C60 250 72 238 88 232 Z" fill="#e0751c"/>
+        <path d="M234 175 C256 205 264 240 252 275 C244 250 232 238 216 232 Z" fill="#e0751c"/>
+        <path d="M92 172 C92 118 212 118 212 172 C212 208 192 248 152 266 C112 248 92 208 92 172 Z" fill="#8fd05c" stroke="#3f7d1c" stroke-width="3"/>
+        <path d="M96 138 C70 138 40 142 40 152 C40 164 110 172 152 172 C194 172 264 164 264 152 C264 142 234 138 208 138 C186 128 118 128 96 138 Z" fill="#1a0a30" stroke="#7a4fc0" stroke-width="3"/>
+        <path d="M110 138 C124 92 142 52 166 12 C186 2 206 14 198 34 C192 44 184 46 178 50 C190 80 200 108 210 138 Z" fill="#1a0a30" stroke="#7a4fc0" stroke-width="3"/>
+        <path d="M107 128 C140 138 180 138 212 128 L208 108 C176 118 142 118 112 108 Z" fill="#ff8a1f"/>
+        <rect x="143" y="108" width="22" height="22" rx="3" fill="#ffd66b" stroke="#b25a0a" stroke-width="2"/>
+        <rect x="149" y="114" width="10" height="10" rx="1" fill="#ff8a1f"/>
+        <path d="M112 186 Q126 168 140 186" fill="none" stroke="#21103a" stroke-width="6" stroke-linecap="round"/>
+        <path d="M164 186 Q178 168 192 186" fill="none" stroke="#21103a" stroke-width="6" stroke-linecap="round"/>
+        <path d="M104 160 L138 170" stroke="#21103a" stroke-width="5" stroke-linecap="round"/>
+        <path d="M200 160 L166 170" stroke="#21103a" stroke-width="5" stroke-linecap="round"/>
+        <path d="M152 184 C142 200 140 214 156 218 C166 216 168 208 162 204" fill="#7fc04d" stroke="#3f7d1c" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="158" cy="214" r="4" fill="#5a3a1a"/>
+        <g id="wMouth">
+          <path d="M112 224 Q152 232 192 224 Q188 268 152 272 Q116 268 112 224 Z" fill="#4a0a24" stroke="#21103a" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M122 226 L130 242 L138 227 Z" fill="#fff"/>
+          <path d="M168 227 L176 242 L184 226 Z" fill="#fff"/>
+          <ellipse cx="152" cy="262" rx="20" ry="9" fill="#ff6f8f"/>
+        </g>
+      </g>
+    </svg>
+    <h2>HÁ HÁ HÁ! Os fantasmas escaparam!</h2>
+    <p id="wMsg"></p>
+    <button class="btn" id="btnWitch" type="button">Ver resultado</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO DO PROFESSOR (edite só estas duas linhas)
+   ===================================================================== */
+// Endereço do ranking online (termina em /exec). Deixe '' para jogar só com ranking local.
+const API_URL = '';
+// Turmas que aparecem na lista do aluno (pode mudar, acrescentar ou tirar).
+const TURMAS = ['Turma 601', 'Turma 602', 'Turma 603'];
+/* ===================================================================== */
+(function(){
+'use strict';
+
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[rnd(0,a.length-1)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t;}return a;}
+function frac(n,d){const g=gcd(n,d)||1;return {n:n/g,d:d/g};}
+function feq(f,g){return f.n*g.d===g.n*f.d;}
+const pow10=k=>Math.pow(10,k);
+
+function fracHTML(n,d){
+  if(d===1) return String(n);
+  return '<span class="fr"><span class="n">'+n+'</span><span class="d">'+d+'</span></span>';
+}
+function randDigits(len,lastNonZero){
+  let s='';
+  for(let k=0;k<len;k++){
+    let d=rnd(0,9);
+    if(k===len-1 && lastNonZero && d===0) d=rnd(1,9);
+    s+=d;
+  }
+  return s;
+}
+
+const P1=['1','2','3','4','5','6','7','8'];
+const P2=['12','13','15','18','21','24','27','36','45','54','63','72','81'];
+const P_ALL=P1.concat(P2);
+
+function expand(n,d){
+  const i=Math.floor(n/d); let r=n%d;
+  const seen={}; let digits=''; let pos=0;
+  while(r!==0 && !(r in seen)){
+    seen[r]=pos; r*=10; digits+=Math.floor(r/d); r%=d; pos++;
+  }
+  if(r===0) return {i:i,A:digits,P:''};
+  const s=seen[r];
+  return {i:i,A:digits.slice(0,s),P:digits.slice(s)};
+}
+function fmtDec(x){
+  let s=String(x.i);
+  if(x.A===''&&x.P==='') return s;
+  s+=','+x.A;
+  if(x.P) s+='<span class="per">'+x.P+'</span>';
+  return s;
+}
+function fmtDots(x){
+  let s=String(x.i);
+  if(x.A===''&&x.P==='') return s;
+  s+=','+x.A;
+  if(x.P){ let rep=''; while(rep.length<4) rep+=x.P; s+=rep+'…'; }
+  return s;
+}
+function kindOf(x){ return x.P===''?0:1; }
+
+function chain(i,num,D){
+  const out=[];
+  if(i>0){ out.push(i+' + '+fracHTML(num,D)); out.push(fracHTML(i*D+num,D)); }
+  else out.push(fracHTML(num,D));
+  const N=i*D+num, g=gcd(N,D);
+  if(g>1) out.push(fracHTML(N/g,D/g));
+  return {html:out.join(' = '),g:g};
+}
+
+function buildFracOptions(correct,cands){
+  const opts=[{f:correct,correct:true}];
+  for(const c of shuffle(cands)){
+    if(!c||c.d<=0||c.n<=0) continue;
+    if(opts.some(o=>feq(o.f,c))) continue;
+    opts.push({f:c,correct:false});
+    if(opts.length===4) break;
+  }
+  let k=1;
+  while(opts.length<4){
+    const f={n:correct.n+k, d:correct.d}; k++;
+    if(!opts.some(o=>feq(o.f,f))) opts.push({f:f,correct:false});
+  }
+  return shuffle(opts).map(o=>({html:fracHTML(o.f.n,o.f.d),correct:o.correct}));
+}
+
+function Q(prompt,options,explain,meta){ return {phase:0,first:false,prompt:prompt,options:options,explain:explain,meta:meta}; }
+
+function makeX(kind){
+  if(kind===0) return {i:rnd(0,4),A:randDigits(rnd(1,3),true),P:''};
+  return {i:rnd(0,3),A:'',P:pick(P_ALL)};
+}
+function explainKind(x){
+  const k=kindOf(x);
+  if(k===0) return '<b>Decimal exato</b>: o número termina depois de '+x.A.length+' casa'+(x.A.length>1?'s':'')+' decimal'+(x.A.length>1?'is':'')+'. A divisão “acaba”.';
+  return '<b>Dízima periódica simples</b>: o período <span class="per">'+x.P+'</span> começa logo depois da vírgula ('+fmtDots(x)+').';
+}
+
+function genPhase1(qtd, mode){
+  const out=[], used=new Set();
+  const types = [];
+  for(let i=0; i<Math.ceil(qtd/2); i++){ types.push('e','p'); }
+  shuffle(types).slice(0, qtd).forEach(sp=>{
+    let x,key;
+    do{
+      x = sp==='e' ? makeX(0) : makeX(1);
+      key=fmtDots(x);
+    }while(used.has(key));
+    used.add(key);
+    const exact=(sp==='e');
+    const expl = exact ? explainKind(x)
+      : '<b>Dízima periódica</b>: o grupo <span class="per">'+x.P+'</span> se repete sem parar ('+fmtDots(x)+'). Ela nunca termina.';
+    out.push(Q('Este fantasma carrega o número<div class="big">'+fmtDec(x)+'</div>Que tipo de número é esse?',
+      [{html:'Decimal exato',correct:exact},{html:'Dízima periódica',correct:!exact}],expl,{x:x,type:exact?0:1}));
+  });
+  return out;
+}
+
+function genPhase2(qtd, mode){
+  const out=[], used=new Set();
+  for(let k=0;k<qtd;k++){
+    let x,N,D,tries=0;
+    // Pede fração irredutível apenas na última questão do Modo Clássico
+    const reqIrred = (mode === 'normal' && k === qtd - 1);
+    
+    do{
+      x={i:k<2?0:rnd(1,4),A:randDigits(rnd(1,3),true),P:''};
+      D=pow10(x.A.length); N=x.i*D+parseInt(x.A,10); tries++;
+    }while((used.has(fmtDots(x))||(reqIrred && gcd(N,D)===1))&&tries<300);
+    used.add(fmtDots(x));
+    
+    const raw = {n:N, d:D};
+    const v = reqIrred ? frac(N,D) : raw; 
+    const a = x.A.length;
+    
+    const cands=[{n:N,d:D*10},{n:N,d:D/10},{n:N,d:10}];
+    if(reqIrred) cands.push(raw); 
+    else cands.push(frac(N,D)); 
+    
+    if(x.i>0) cands.push({n:parseInt(x.A,10),d:D});
+
+    const explTitle = reqIrred ? 'fração geratriz irredutível' : 'fração geratriz';
+    const expl = '<b>'+fmtDec(x)+'</b> tem '+a+' casa'+(a>1?'s':'')+' depois da vírgula, então o denominador é <b>'+D+'</b>.<br>'+
+      fmtDec(x)+' = ' + (reqIrred ? chain(0,N,D).html + '<br>Como foi pedido, simplificamos a fração ao final.' : fracHTML(N,D));
+      
+    out.push(Q('Qual é a <b>'+explTitle+'</b> de<div class="big">'+fmtDec(x)+'</div>',
+      buildFracOptions(v,cands),expl,{x:x,ans:v}));
+  }
+  return out;
+}
+
+function genPhase3(qtd, mode){
+  const out=[], used=new Set();
+  for(let k=0;k<qtd;k++){
+    let x, tries=0;
+    const reqIrred = (mode === 'normal' && k === qtd - 1);
+    let p, Pint, D, raw, v;
+    do{
+      if(k<2) x={i:0,A:'',P:pick(P1)};
+      else if(k===2) x={i:0,A:'',P:pick(P2)};
+      else x={i:rnd(1,3),A:'',P:pick(P_ALL)};
+
+      p=x.P.length; Pint=parseInt(x.P,10); D=pow10(p)-1;
+      raw = {n: x.i*D + Pint, d: D};
+      tries++;
+    }while(used.has(fmtDots(x)) || (reqIrred && gcd(raw.n, raw.d)===1 && tries<100));
+    used.add(fmtDots(x));
+    
+    v = reqIrred ? frac(raw.n, raw.d) : raw;
+
+    const mk=(num,den)=>({n:x.i*den+num,d:den});
+    const cands=[mk(Pint,pow10(p)),mk(Pint,pow10(p+1)-1),mk(Pint,9),mk(Pint+1,D),mk(Pint-1,D)];
+    if(reqIrred) cands.push(raw);
+    else cands.push(frac(raw.n, raw.d));
+
+    const explTitle = reqIrred ? 'fração geratriz irredutível' : 'fração geratriz';
+    const expl='O período <span class="per">'+x.P+'</span> tem '+p+' algarismo'+(p>1?'s':'')+', então o denominador tem '+p+' nove'+(p>1?'s':'')+': <b>'+D+'</b>.<br>'+
+      fmtDec(x)+' = ' + (reqIrred ? chain(x.i,Pint,D).html + '<br>E como foi pedido, simplificamos a fração!' : fracHTML(raw.n, raw.d));
+      
+    out.push(Q('Qual é a <b>'+explTitle+'</b> da dízima periódica simples<div class="big">'+fmtDec(x)+'</div>',
+      buildFracOptions(v,cands),expl,{x:x,ans:v}));
+  }
+  return out;
+}
+
+function mut(s){
+  const last=parseInt(s.slice(-1),10);
+  let d=rnd(0,9); while(d===last) d=rnd(0,9);
+  return s.slice(0,-1)+d;
+}
+function decoys(x){
+  const i=x.i, A=x.A, P=x.P, list=[];
+  if(P){
+    list.push({i:i,A:'',P:P.length>1?P.slice(1)+P[0]:String((parseInt(P,10)+1)%10)});
+  }else{
+    list.push({i:i,A:'',P:A});
+    list.push({i:i,A:A.slice(0,-1),P:A.slice(-1)});
+    list.push({i:i,A:A,P:A.slice(-1)});
+  }
+  return list;
+}
+function buildDecOptions(x){
+  // Simplificado para evitar compostas
+  const opts=[{x:x,correct:true}];
+  const vistos=new Set([fmtDec(x)]);
+  const okAdd=y=>{
+    if(!y||(y.A===''&&y.P==='')) return false;
+    const key=fmtDec(y);
+    if(vistos.has(key)) return false; // nunca repete alternativa igual
+    vistos.add(key);
+    opts.push({x:y,correct:false}); return true;
+  };
+  for(const y of shuffle(decoys(x))){ if(opts.length>=4) break; okAdd(y); }
+  let guard=0;
+  while(opts.length<4&&guard++<200){
+    const y={i:x.i,A:x.A,P:x.P};
+    if(rnd(0,2)===0) y.i=x.i+rnd(1,2);
+    else if(y.P) y.P=mut(y.P);
+    else y.A=mut(y.A);
+    okAdd(y);
+  }
+  return shuffle(opts).map(o=>({html:fmtDec(o.x),correct:o.correct}));
+}
+function genPhaseFinal(qtd, mode){
+  const out=[], used=new Set();
+  const half = Math.floor(qtd/2);
+  for(let k=0;k<half;k++){
+    let n,d,x,key,tries=0;
+    do{
+      // Denominadores restritos a exatos (2,4,5,8,10,20,25) ou dízimas simples (3,9,11,27,33,99)
+      d = k===0 ? pick([3,9,11,27,33,99]) : pick([2,4,5,8,10,20,25]);
+      n = rnd(1,2*d-1); tries++;
+      key=n+'/'+d;
+    }while((gcd(n,d)!==1||n%d===0||used.has(key))&&tries<500);
+    used.add(key);
+    x=expand(n,d);
+    const expl='Dividindo '+n+' ÷ '+d+' encontramos <b>'+fmtDots(x)+'</b>. '+
+      (x.P?'O grupo que se repete (<span class="per">'+x.P+'</span>) recebe o traço em cima.'
+          :'A divisão termina, então é um decimal exato: <b>'+fmtDec(x)+'</b>.');
+    out.push(Q('Qual número decimal corresponde à fração<div class="big">'+fracHTML(n,d)+'</div>',
+      buildDecOptions(x),expl,{n:n,d:d,x:x}));
+  }
+  const rem = qtd - half;
+  for(let k=0; k<rem; k++) {
+    const kd = pick([0,1]); // Apenas exata(0) e simples(1)
+    let x,key;
+    do{ x=makeX(kd); key=fmtDots(x); }while(used.has(key));
+    used.add(key);
+    out.push(Q('Classifique o número do fantasma:<div class="big">'+fmtDec(x)+'</div>',
+      ['Decimal exato','Dízima periódica simples'].map((t,ix)=>({html:t,correct:ix===kd})),
+      explainKind(x),{x:x,type:kd}));
+  }
+  return shuffle(out);
+}
+
+const PHASES=[
+  {name:'Fantasminhas',desc:'Decimal exato ou dízima periódica? Descubra o tipo do número que cada fantasma carrega.'},
+  {name:'Poções de Fração',desc:'Transforme decimais exatos em fração. Lembre: o denominador é uma potência de 10.'},
+  {name:'Dízimas Simples',desc:'O período começa logo depois da vírgula. Hora de usar os noves para achar a fração geratriz.'},
+  {name:'O Chefão da Abóbora',desc:'Mistura de tudo: da fração para o decimal e classificação de dízimas.'}
+];
+
+// Modo infinito: cada "lote" traz 8 perguntas de cada fase, tudo embaralhado junto.
+// Quando o lote acaba, outro é gerado (sem repetir perguntas já vistas). Nunca termina por falta de perguntas.
+function buildInfBatch(visto){
+  let batch=[];
+  for(let tent=0; tent<6 && batch.length<20; tent++){
+    batch=[];
+    const gens=[genPhase1,genPhase2,genPhase3,genPhaseFinal];
+    gens.forEach((g,pi)=>{
+      g(8,'inf').forEach(q=>{
+        q.phase=pi; q.first=false;
+        if(!visto.has(q.prompt)){ visto.add(q.prompt); batch.push(q); }
+      });
+    });
+  }
+  return shuffle(batch);
+}
+
+function buildGame(mode){
+  if(mode==='inf') return buildInfBatch(new Set());
+  const qtd = 5; // Total de 4 fases * 5 = 20 Qs no Normal
+  const gens=[
+    ()=>genPhase1(qtd, mode),
+    ()=>genPhase2(qtd, mode),
+    ()=>genPhase3(qtd, mode),
+    ()=>genPhaseFinal(qtd, mode)
+  ];
+  const all=[];
+  gens.forEach((g,pi)=>{ g().forEach((q,k)=>{ q.phase=pi; q.first=(k===0); all.push(q); }); });
+  return all;
+}
+
+const $ = id => document.getElementById(id);
+const TLIMIT=30; // só para o bônus de velocidade (não há mais limite de tempo)
+const RANK_KEY='cacafantasmas_ranking_v3';
+let st=null, timer=null, muted=false, audioCtx=null;
+
+let memRank=[]; 
+function loadRank(){
+  try{ const v=localStorage.getItem(RANK_KEY); if(v!==null) return JSON.parse(v); }catch(e){}
+  return memRank;
+}
+function saveRank(l){
+  memRank=l;
+  try{ localStorage.setItem(RANK_KEY,JSON.stringify(l)); }catch(e){}
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function getCtx(){
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    return audioCtx;
+  }catch(e){ return null; }
+}
+function beep(freq,dur,type,delay){
+  if(muted) return;
+  try{
+    getCtx();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type=type||'sine'; o.frequency.value=freq;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t=audioCtx.currentTime+(delay||0);
+    g.gain.setValueAtTime(0.07,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.02);
+  }catch(e){}
+}
+
+
+/* ===== Trilha sonora (gerada pelo navegador, sem arquivos) ===== */
+let musicOn=!/[?&#]mudo/.test(location.href), mTimer=null, mStep=0, mNext=0, mGain=null, noiseBuf=null;
+const SEMI=n=>440*Math.pow(2,n/12);
+// notas em semitons a partir de Lá4; escala de Lá menor harmônica (8 compassos de 8 colcheias)
+const MUS_LEAD=[[0,3,7,3,0,3,7,12],[-4,0,3,0,-4,0,3,8],[-5,-1,2,-1,-5,-1,2,7],[0,3,7,12,11,7,3,null],
+                [5,null,8,null,12,null,8,5],[3,null,7,null,12,null,7,3],[2,null,7,null,11,null,14,11],[12,null,7,null,3,null,0,null]];
+const MUS_BASS=[-24,-28,-29,-24,-26,-24,-29,-24];
+function musLvl(){ return st? (st.streak>=8?2:(st.streak>=3?1:0)) : 0; }
+function musTone(freq,t,dur,type,vol,att){
+  const c=audioCtx, o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+(att||0.01));
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(mGain); o.start(t); o.stop(t+dur+0.05);
+}
+function musStep(step,t){
+  const bar=Math.floor(step/8)%8, k=step%8, c=audioCtx;
+  const lead=MUS_LEAD[bar][k];
+  if(lead!==null){ musTone(SEMI(lead),t,0.9,'triangle',0.07); musTone(SEMI(lead+12),t,0.35,'sine',0.022); }
+  if(k===0||k===4) musTone(SEMI(MUS_BASS[bar]),t,k===0?1.0:0.6,'sine',0.12);
+  if(k===0){ musTone(SEMI(MUS_BASS[bar]+12),t,2.1,'triangle',0.02,0.4); musTone(SEMI(MUS_BASS[bar]+19),t,2.1,'triangle',0.014,0.4); }
+  const lvl=musLvl();
+  if(lvl>=1 && (k===0||k===4)){ // bumbo suave
+    const o=c.createOscillator(), g=c.createGain();
+    o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(45,t+0.14);
+    g.gain.setValueAtTime(0.16,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+    o.connect(g); g.connect(mGain); o.start(t); o.stop(t+0.25);
+  }
+  if(lvl>=2 && k%2===1){ // chocalho
+    if(!noiseBuf){ noiseBuf=c.createBuffer(1,c.sampleRate*0.1,c.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; }
+    const n=c.createBufferSource(), f=c.createBiquadFilter(), g=c.createGain();
+    n.buffer=noiseBuf; f.type='highpass'; f.frequency.value=6000;
+    g.gain.setValueAtTime(0.035,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.06);
+    n.connect(f); f.connect(g); g.connect(mGain); n.start(t); n.stop(t+0.1);
+  }
+}
+function musicStart(){
+  if(!musicOn||mTimer) return;
+  const c=getCtx(); if(!c) return;
+  try{
+    mGain=c.createGain(); mGain.gain.setValueAtTime(0.0001,c.currentTime);
+    mGain.gain.exponentialRampToValueAtTime(0.8,c.currentTime+1.2); mGain.connect(c.destination);
+    mStep=0; mNext=c.currentTime+0.15;
+    mTimer=setInterval(()=>{
+      try{ while(mNext<c.currentTime+0.3){ musStep(mStep,mNext); const l=musLvl(); mNext+=(l>=2?0.2:(l===1?0.24:0.28)); mStep++; } }catch(e){}
+    },80);
+  }catch(e){ mTimer=null; }
+}
+function musicStop(){
+  if(!mTimer) return;
+  clearInterval(mTimer); mTimer=null;
+  try{
+    const g=mGain, c=audioCtx;
+    g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(Math.max(g.gain.value,0.0002),c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+0.4);
+    setTimeout(()=>{ try{ g.disconnect(); }catch(e){} },600);
+  }catch(e){}
+}
+// risada da bruxa
+function cackle(){
+  if(muted) return;
+  try{
+    const c=getCtx(); if(!c) return;
+    const t0=c.currentTime+0.05;
+    for(let i=0;i<9;i++){
+      const t=t0+i*0.17, base=480+i*26+(i%2?50:0);
+      const o=c.createOscillator(), f=c.createBiquadFilter(), g=c.createGain();
+      o.type='sawtooth';
+      o.frequency.setValueAtTime(base,t);
+      o.frequency.exponentialRampToValueAtTime(base*1.55,t+0.07);
+      o.frequency.exponentialRampToValueAtTime(base*0.85,t+0.15);
+      f.type='bandpass'; f.frequency.value=900+(i%2)*500; f.Q.value=2.5;
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.16,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+      o.connect(f); f.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.2);
+    }
+  }catch(e){}
+}
+
+/* ===== Exportar / importar ranking e placar das turmas ===== */
+const IMP_KEY='cacafantasmas_importados_v1', LBL_KEY='cacafantasmas_turma_v1';
+let memImp={}, memLbl='', boardSel='local', msgTimer=null;
+function loadImp(){ try{ const v=localStorage.getItem(IMP_KEY); if(v!==null) return JSON.parse(v)||{}; }catch(e){} return memImp; }
+function saveImp(o){ memImp=o; try{ localStorage.setItem(IMP_KEY,JSON.stringify(o)); }catch(e){} }
+function loadLbl(){ try{ const v=localStorage.getItem(LBL_KEY); if(v!==null) return v; }catch(e){} return memLbl; }
+function saveLbl(v){ memLbl=v; try{ localStorage.setItem(LBL_KEY,v); }catch(e){} }
+const ekey=r=>[r.id,r.nome,r.pontos].join('|');
+function rkMsg(t,cls){
+  const m=$('rkMsg'); m.textContent=t; m.className='note'+(cls?' '+cls:'');
+  clearTimeout(msgTimer); msgTimer=setTimeout(()=>{ m.textContent=''; m.className='note'; },7000);
+}
+function cleanEntry(r){
+  if(!r||typeof r!=='object'||r.nome===undefined||!isFinite(Number(r.pontos))) return null;
+  return {id:r.id,turma:String(r.turma||'').slice(0,24),nome:String(r.nome).slice(0,40),equipe:String(r.equipe||'').slice(0,40),
+          pontos:Math.round(Number(r.pontos)),acertos:Math.round(Number(r.acertos))||0,mode:r.mode==='inf'?'inf':'normal'};
+}
+function mergedBoards(){
+  const map={}, lbl=loadLbl().trim();
+  const add=(name,list)=>{ const m=map[name]||(map[name]=new Map()); list.forEach(r=>m.set(ekey(r),r)); };
+  const loc=loadRank(); if(loc.length) add(lbl||'Este computador',loc);
+  const imp=loadImp(); Object.keys(imp).forEach(n=>{ if(imp[n].length) add(n,imp[n]); });
+  return map;
+}
+function renderBoards(){
+  $('rkMain').hidden=!ONLINE;
+  if(ONLINE){
+    $('rkMain').innerHTML=[['on','Ranking online'],['loc','Este aparelho']].map(x=>'<button type="button" data-v="'+x[0]+'" class="'+(x[0]===rkView?'on':'')+'">'+x[1]+'</button>').join('');
+    [...$('rkMain').querySelectorAll('button')].forEach(b=>b.addEventListener('click',()=>{ rkView=b.dataset.v; renderBoards(); if(rkView==='on') fetchRanking(false); }));
+  }
+  const showOn=ONLINE&&rkView==='on';
+  $('onView').hidden=!showOn; $('locView').hidden=showOn;
+  if(showOn) renderOnline(); else renderLocal();
+}
+function renderLocal(){
+  const imp=loadImp(), nomes=Object.keys(imp).filter(n=>imp[n].length), lbl=loadLbl().trim();
+  if(boardSel!=='local' && !nomes.includes(boardSel)) boardSel='local';
+  if(document.activeElement!==$('inTurma')) $('inTurma').value=lbl;
+  const tabs=[{k:'local',t:'Este computador'+(lbl?' ('+lbl+')':'')}].concat(nomes.map(n=>({k:n,t:n+' ('+imp[n].length+')'})));
+  $('rkTabs').innerHTML=tabs.length>1?tabs.map(x=>'<button type="button" data-k="'+esc(x.k)+'" class="'+(x.k===boardSel?'on':'')+'">'+esc(x.t)+'</button>').join(''):'';
+  [...$('rkTabs').querySelectorAll('button')].forEach(b=>b.addEventListener('click',()=>{ boardSel=b.dataset.k; renderBoards(); }));
+  if(boardSel==='local') renderRank($('rankStart'),null); else renderRank($('rankStart'),null,imp[boardSel]);
+  $('btnClear').hidden=(boardSel!=='local');
+  $('btnDelBoard').hidden=(boardSel==='local');
+  // placar das turmas
+  const map=mergedBoards(), rows=Object.keys(map).map(n=>{
+    const best={}; map[n].forEach(r=>{ const k=(String(r.nome).trim()+'|'+String(r.equipe||'').trim()).toLowerCase(); best[k]=Math.max(best[k]||0,r.pontos); });
+    const v=Object.keys(best).map(k=>best[k]);
+    return {n:n,duplas:v.length,melhor:Math.max.apply(null,v),media:Math.round(v.reduce((a,b)=>a+b,0)/v.length)};
+  }).sort((a,b)=>b.media-a.media);
+  $('cmpPanel').hidden=(rows.length<2);
+  $('cmpBody').innerHTML=rows.map((r,i)=>'<tr class="'+(i===0?'lead':'')+'"><td>'+(i+1)+'º · '+esc(r.n)+'</td><td>'+r.duplas+'</td><td>'+r.melhor+'</td><td>'+r.media+'</td></tr>').join('');
+}
+function doExport(){
+  const lbl=(loadLbl().trim()||(ONLINE?$('selTurma').value:'')).trim(), loc=loadRank();
+  if(!lbl && loc.length){ rkMsg('Digite o nome da turma deste computador (ex.: Turma 601) antes de exportar.','bad'); $('inTurma').focus(); return; }
+  const placares=[]; if(loc.length) placares.push({turma:lbl,ranking:loc});
+  const imp=loadImp(); Object.keys(imp).forEach(n=>{ if(imp[n].length) placares.push({turma:n,ranking:imp[n]}); });
+  if(!placares.length){ rkMsg('Ainda não há ranking para exportar.','bad'); return; }
+  const data={tipo:'cacafantasmas-ranking',versao:1,exportadoEm:new Date().toISOString(),placares:placares};
+  const d=new Date(), z=n=>String(n).padStart(2,'0');
+  const slug=(lbl||'todas-as-turmas').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'ranking';
+  const nome='ranking-'+slug+'-'+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+'.json';
+  try{
+    const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1500);
+    rkMsg('Exportado: '+nome+' (veja a pasta Downloads).','good');
+  }catch(e){ rkMsg('Não consegui gerar o arquivo neste navegador.','bad'); }
+}
+function readFile(f){
+  return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(String(r.result)); r.onerror=()=>no(r.error); r.readAsText(f); });
+}
+async function doImport(files){
+  let novos=0, repetidos=0, erros=0, primeira=null;
+  for(const f of files){
+    try{
+      const d=JSON.parse(await readFile(f));
+      const pls=(d&&Array.isArray(d.placares))?d.placares:((d&&Array.isArray(d.ranking))?[{turma:d.turma,ranking:d.ranking}]:(Array.isArray(d)?[{turma:'',ranking:d}]:null));
+      if(!pls) throw new Error('formato');
+      const local=new Set(loadRank().map(ekey)), imp=loadImp();
+      pls.forEach(pl=>{
+        const nome=String(pl.turma||'').trim().slice(0,24)||'Sem nome';
+        const cur=imp[nome]||[], vistos=new Set(cur.map(ekey));
+        (pl.ranking||[]).forEach(r=>{
+          const e=cleanEntry(r); if(!e) return;
+          if(local.has(ekey(e))||vistos.has(ekey(e))){ repetidos++; return; }
+          cur.push(e); vistos.add(ekey(e)); novos++;
+        });
+        if(cur.length){ imp[nome]=cur.sort((a,b)=>b.pontos-a.pontos).slice(0,300); if(!primeira) primeira=nome; }
+      });
+      saveImp(imp);
+    }catch(e){ erros++; }
+  }
+  if(primeira) boardSel=primeira;
+  renderBoards();
+  if(erros && !novos && !repetidos) rkMsg('Arquivo inválido: use um arquivo gerado pelo botão Exportar ranking.','bad');
+  else rkMsg('Importado: '+novos+' resultado'+(novos===1?'':'s')+' novo'+(novos===1?'':'s')+(repetidos?' ('+repetidos+' já existiam)':'')+(erros?' · '+erros+' arquivo(s) inválido(s)':'')+'.',erros?'bad':'good');
+}
+
+/* ===== Ranking online (Planilha Google via Apps Script) ===== */
+const ONLINE=!!API_URL;
+const PEND_KEY='cacafantasmas_pendentes_v1', ME_KEY='cacafantasmas_eu_v1';
+let memPend=[], memMe=null, rkView='on', onData=null, onErr=false, onMode='inf', onTurma='*', lastFetch=0, fetching=false, flushing=false;
+function loadPend(){ try{ const v=localStorage.getItem(PEND_KEY); if(v!==null) return JSON.parse(v)||[]; }catch(e){} return memPend; }
+function savePend(a){ memPend=a; try{ localStorage.setItem(PEND_KEY,JSON.stringify(a)); }catch(e){} }
+function saveMe(){ const o={nome:$('inNome').value.trim(),equipe:$('inEquipe').value.trim(),turma:$('selTurma').value}; memMe=o; try{ localStorage.setItem(ME_KEY,JSON.stringify(o)); }catch(e){} }
+function loadMe(){ try{ const v=localStorage.getItem(ME_KEY); if(v!==null) return JSON.parse(v)||{}; }catch(e){} return memMe||{}; }
+const pkey=r=>(String(r.nome).trim()+'|'+String(r.equipe||'').trim()+'|'+String(r.turma||'').trim()).toLowerCase();
+const rankSort=(a,b)=>b.pontos-a.pontos||b.acertos-a.acertos;
+function bestPer(items){
+  const m=new Map();
+  items.forEach(r=>{ const k=pkey(r)+'|'+r.modo, c=m.get(k); if(!c||r.pontos>c.pontos||(r.pontos===c.pontos&&r.acertos>c.acertos)) m.set(k,r); });
+  return [...m.values()];
+}
+async function api(path,opts){
+  const ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+  const to=setTimeout(()=>{ if(ctl) ctl.abort(); },15000);
+  try{
+    const r=await fetch(API_URL+path,Object.assign({redirect:'follow'},ctl?{signal:ctl.signal}:{},opts||{}));
+    return await r.json();
+  } finally { clearTimeout(to); }
+}
+async function fetchRanking(force){
+  if(!ONLINE||fetching) return;
+  if(!force && onData && Date.now()-lastFetch<15000){ if(!$('start').hidden) renderOnlineIfShown(); return; }
+  fetching=true; renderOnlineIfShown();
+  try{
+    const j=await api((API_URL.indexOf('?')>=0?'&':'?')+'acao=ranking&_='+Date.now());
+    if(!j||!j.ok||!Array.isArray(j.itens)) throw new Error('resposta');
+    onData=j.itens.map(r=>({turma:String(r.turma||''),nome:String(r.nome||''),equipe:String(r.equipe||''),modo:r.modo==='inf'?'inf':'normal',pontos:Number(r.pontos)||0,acertos:Number(r.acertos)||0}));
+    onErr=false; lastFetch=Date.now();
+  }catch(e){ onErr=true; }
+  fetching=false; renderOnlineIfShown();
+}
+function renderOnlineIfShown(){ if(ONLINE&&rkView==='on'&&!$('onView').hidden) renderOnline(); }
+async function flushPending(){
+  if(!ONLINE||flushing) return;
+  flushing=true;
+  try{
+    const lote=loadPend(), ficam=[];
+    for(const e of lote){
+      try{
+        const j=await api('',{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+          body:JSON.stringify({acao:'enviar',id:e.id,turma:e.turma,nome:e.nome,equipe:e.equipe,modo:e.mode,pontos:e.pontos,acertos:e.acertos})});
+        if(j&&(j.ok||j.permanente)) continue;   // enviado (ou recusado de vez): sai da fila
+        ficam.push(e);
+      }catch(err){ ficam.push(e); }
+    }
+    const ids=new Set(lote.map(e=>e.id));
+    savePend(ficam.concat(loadPend().filter(e=>!ids.has(e.id))));
+  } finally { flushing=false; }
+}
+async function endOnline(entry){
+  if(!ONLINE) return;
+  const pend=loadPend(); if(!pend.some(e=>e.id===entry.id)){ pend.push(entry); savePend(pend); }
+  $('sendStatus').textContent='Enviando seu resultado para o ranking online…';
+  await flushPending();
+  const enviado=!loadPend().some(e=>e.id===entry.id);
+  $('sendStatus').textContent=enviado?'Resultado enviado para o ranking online!':'Sem conexão: seu resultado ficou guardado neste aparelho e será enviado quando você abrir o jogo com internet.';
+  await fetchRanking(true);
+  renderEndOnline(entry);
+}
+function listHTML(list,meKey){
+  if(!list.length) return '<div class="empty">Ninguém no ranking ainda. Seja o primeiro!</div>';
+  return '<ol class="rank">'+list.slice(0,10).map(r=>
+    '<li class="'+(meKey&&pkey(r)===meKey?'me':'')+'"><span>'+esc(r.nome)+(r.equipe?' <small style="color:#b9a8d6">('+esc(r.equipe)+')</small>':'')+'<span class="tg">'+esc(r.turma)+'</span></span><span class="pts">'+r.pontos+' pts · '+r.acertos+(r.modo==='inf'?' acertos':'/20')+'</span></li>').join('')+'</ol>';
+}
+function renderEndOnline(entry){
+  if(!ONLINE||$('end').hidden) return;
+  if(!onData){ $('ePos').textContent='Não consegui carregar o ranking online agora.'; renderRank($('rankEnd'),st&&st.id); return; }
+  const item={turma:entry.turma,nome:entry.nome,equipe:entry.equipe,modo:entry.mode,pontos:entry.pontos,acertos:entry.acertos};
+  const all=bestPer(onData.concat([item])).filter(r=>r.modo===entry.mode).sort(rankSort);
+  const me=pkey(entry), pos=all.findIndex(r=>pkey(r)===me)+1;
+  const da=all.filter(r=>r.turma===entry.turma), posT=da.findIndex(r=>pkey(r)===me)+1;
+  $('ePos').textContent=entry.turma+': '+posT+'º lugar · Geral: '+pos+'º lugar de '+all.length+' jogador'+(all.length===1?'':'es')+' (melhor marca neste modo).';
+  $('rankEnd').innerHTML=listHTML(all,me);
+}
+function renderOnline(){
+  const turmas=TURMAS.slice(); (onData||[]).forEach(r=>{ if(r.turma&&!turmas.includes(r.turma)) turmas.push(r.turma); });
+  const chip=(k,t,on,attr)=>'<button type="button" '+attr+'="'+esc(k)+'" class="'+(on?'on':'')+'">'+esc(t)+'</button>';
+  $('onMode').innerHTML=[['inf','Modo Infinito'],['normal','Modo Clássico']].map(x=>chip(x[0],x[1],x[0]===onMode,'data-m')).join('');
+  $('onTurma').innerHTML=chip('*','Todas as turmas',onTurma==='*','data-t')+turmas.map(t=>chip(t,t,t===onTurma,'data-t')).join('');
+  [...$('onMode').querySelectorAll('button')].forEach(b=>b.addEventListener('click',()=>{ onMode=b.dataset.m; renderOnline(); }));
+  [...$('onTurma').querySelectorAll('button')].forEach(b=>b.addEventListener('click',()=>{ onTurma=b.dataset.t; renderOnline(); }));
+  const me=pkey({nome:$('inNome').value,equipe:$('inEquipe').value,turma:$('selTurma').value});
+  const base=bestPer(onData||[]).filter(r=>r.modo===onMode);
+  const lista=base.filter(r=>onTurma==='*'||r.turma===onTurma).sort(rankSort);
+  $('onList').innerHTML=onData?listHTML(lista,me):'<div class="empty">'+(fetching?'Carregando o ranking…':'Não foi possível carregar o ranking online agora.')+'</div>';
+  let st_=''; 
+  if(fetching) st_='Atualizando…';
+  else if(onErr) st_=onData?'Sem conexão: mostrando dados antigos.':'Sem conexão com o ranking.';
+  else if(lastFetch) { const d=new Date(lastFetch); st_='Atualizado às '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+'.'; }
+  const pend=loadPend().length;
+  $('onStatus').innerHTML=esc(st_)+(pend?' · '+pend+' resultado(s) aguardando envio.':'')+' <button class="ghostbtn" id="btnRef" type="button" style="padding:3px 10px;margin-left:6px">Atualizar</button>';
+  $('btnRef').addEventListener('click',()=>{ flushPending().then(()=>fetchRanking(true)); fetchRanking(true); });
+  // placar das turmas (online)
+  const grupos={}; base.forEach(r=>{ (grupos[r.turma]||(grupos[r.turma]=[])).push(r.pontos); });
+  const rows=Object.keys(grupos).map(t=>{ const v=grupos[t]; return {n:t,duplas:v.length,melhor:Math.max.apply(null,v),media:Math.round(v.reduce((a,b)=>a+b,0)/v.length)}; }).sort((a,b)=>b.media-a.media);
+  $('cmpPanel').hidden=(rows.length<2);
+  $('cmpBody').innerHTML=rows.map((r,i)=>'<tr class="'+(i===0?'lead':'')+'"><td>'+(i+1)+'º · '+esc(r.n)+'</td><td>'+r.duplas+'</td><td>'+r.melhor+'</td><td>'+r.media+'</td></tr>').join('');
+}
+
+function renderRank(el,meId,lista){
+  const list=(lista||loadRank()).slice(0,10);
+  if(!list.length){ el.innerHTML='<div class="empty">'+(lista?'Este placar está vazio.':'Ninguém jogou ainda neste computador.')+'</div>'; return; }
+  el.innerHTML='<ol class="rank">'+list.map(r=>
+    '<li class="'+(r.id===meId?'me':'')+'"><span>'+esc(r.nome)+(r.equipe?' <small style="color:#b9a8d6">('+esc(r.equipe)+')</small>':'')+'</span><span class="pts">'+r.pontos+' pts · '+(r.mode==='inf'?r.acertos+' acertos (Inf)':r.acertos+'/20 (Nrm)')+'</span></li>'
+  ).join('')+'</ol>';
+}
+
+
+/* ===== Animações de sequência (streak) ===== */
+function useSvg(id){ return '<svg aria-hidden="true"><use href="#'+id+'" width="100%" height="100%"/></svg>'; }
+function fxAdd(html,cls,style,ms){
+  const d=document.createElement('div'); d.className=cls; if(style) d.style.cssText=style; d.innerHTML=html;
+  $('fx').appendChild(d); setTimeout(()=>{ if(d.parentNode) d.remove(); },ms); return d;
+}
+function fxBurst(id,n,size){
+  for(let i=0;i<n;i++){
+    const a=(Math.PI*2*i/n)+Math.random()*.5, dist=170+Math.random()*260;
+    fxAdd(useSvg(id),'fxP','--dx:'+Math.round(Math.cos(a)*dist)+'px;--dy:'+Math.round(Math.sin(a)*dist)+'px;--rot:'+rnd(-360,360)+'deg;--s:'+(size+rnd(-10,14))+'px',1500);
+  }
+}
+function fxBats(n){
+  for(let i=0;i<n;i++){
+    const dur=(2.2+Math.random()*1.6).toFixed(1);
+    const d=fxAdd(useSvg('sv-bat'),'fxBat'+(i%3===0?' rtl':''),'top:'+rnd(6,78)+'%;--dur:'+dur+'s;--dy:'+rnd(-90,90)+'px;animation-delay:'+(i*0.12).toFixed(2)+'s',4500);
+    d.style.opacity='1';
+  }
+}
+function fxGhosts(n){
+  for(let i=0;i<n;i++){
+    fxAdd(useSvg('sv-ghost'),'fxGhost','left:'+rnd(4,92)+'%;--dur:'+(1.8+Math.random()*1.4).toFixed(1)+'s;--dx:'+rnd(-120,120)+'px;--rot:'+rnd(-25,25)+'deg;animation-delay:'+(i*0.1).toFixed(2)+'s',4200);
+  }
+}
+function fxBanner(t,sub,lost){
+  fxAdd('<div class="t">'+t+'</div><div class="s">'+sub+'</div>','fxBanner'+(lost?' lost':''),'',2100);
+}
+function fxFlash(){ fxAdd('','fxFlash','',800); }
+function streakFx(n){
+  let tier=0;
+  if(n===3) tier=1; else if(n===5) tier=2; else if(n===7) tier=3; else if(n===10) tier=4; else if(n>10 && n%5===0) tier=5;
+  if(!tier) return tier;
+  if(tier===1){ fxBanner('COMBO x'+n,'Abóboras acesas!'); fxBurst('sv-pumpkin',10,46); }
+  if(tier===2){ fxBanner('COMBO x'+n,'Morcegos em festa!'); fxBats(7); fxBurst('sv-pumpkin',6,44); }
+  if(tier===3){ fxBanner('COMBO x'+n,'Fantasmas em fuga!'); fxGhosts(9); }
+  if(tier===4){ fxBanner('COMBO x'+n,'Lua cheia!'); fxAdd(useSvg('sv-moon'),'fxMoon','',2700); fxFlash(); fxBats(9); }
+  if(tier===5){ fxBanner('COMBO x'+n,'Lenda das trevas!'); fxFlash(); fxBurst('sv-pumpkin',14,50); fxBats(8); fxGhosts(6); }
+  [523,659,784,1047,1319].slice(0,Math.min(5,tier+2)).forEach((f,i)=>beep(f,.16,'triangle',i*.08));
+  return tier;
+}
+function streakLostFx(n){ fxBanner('Sequência quebrada!','A bruxa riu de x'+n+'...',true); }
+function fxReset(){ $('fx').innerHTML=''; }
+
+/* ===== Maldições do modo infinito (leves, pensadas para o 6º ano) ===== */
+function pickCurses(){
+  if(!st||st.mode!=='inf') return [];
+  const n=st.idx; if(n<3) return [];
+  if(Math.random()>(n<10?0.35:0.5)){ st.lastCurse=null; return []; }
+  if(n>=15 && Math.random()<0.2){ st.lastCurse='both'; return ['fog','bats']; }
+  let c=Math.random()<0.5?'fog':'bats';
+  if(c===st.lastCurse) c=(c==='fog'?'bats':'fog');
+  st.lastCurse=c; return [c];
+}
+function clearCurses(){
+  if(!st) return;
+  clearTimeout(st.batTimer);
+  const box=$('opts'); [...box.querySelectorAll('.cbat')].forEach(b=>b.remove());
+  st.bats=0;
+  $('qcard').classList.remove('fog'); $('qcard').classList.remove('seen'); $('curseTag').hidden=true;
+}
+function swat(b){
+  if(b.dataset.dead) return;
+  b.dataset.dead='1';
+  const l=b.getBoundingClientRect().left-$('opts').getBoundingClientRect().left;
+  b.style.animation='batdie .45s ease forwards'; b.style.left=l+'px';
+  st.bats=Math.max(0,st.bats-1);
+  beep(1200,.08,'square'); beep(700,.1,'square',.06);
+  setTimeout(()=>b.remove(),480);
+}
+function spawnBats(k){
+  const box=$('opts');
+  for(let i=0;i<k;i++){
+    const b=document.createElement('div'); b.className='cbat';
+    const dur=7+Math.random()*3;
+    b.style.cssText='top:'+rnd(2,70)+'%;--dur:'+dur.toFixed(1)+'s;animation-delay:-'+(Math.random()*dur).toFixed(1)+'s;'+(i%2?'animation-direction:alternate-reverse;':'');
+    b.innerHTML='<div class="w">'+useSvg('sv-bat')+'</div>';
+    b.addEventListener('pointerdown',ev=>{ ev.preventDefault(); ev.stopPropagation(); swat(b); });
+    box.appendChild(b); st.bats++;
+  }
+  st.batTimer=setTimeout(()=>{ [...box.querySelectorAll('.cbat')].forEach(b=>b.remove()); st.bats=0; },12000); // não deixa ninguém preso
+}
+function applyCurses(){
+  st.bats=0;
+  const cs=pickCurses(); if(!cs.length) return cs;
+  const names=[];
+  if(cs.includes('fog')){ $('qcard').classList.add('fog'); names.push('Névoa'); }
+  if(cs.includes('bats')){ spawnBats(st.idx<10?4:6); names.push('Morcegos'); }
+  $('curseTag').textContent='Maldição: '+names.join(' + '); $('curseTag').hidden=false;
+  return cs;
+}
+
+/* ===== Tela de falha: bruxa rindo ===== */
+function showWitch(){
+  musicStop(); clearCurses(); fxReset();
+  $('wMsg').textContent='Você capturou '+st.ok+' fantasma'+(st.ok===1?'':'s')+' antes de ficar sem vidas.';
+  $('witch').hidden=false;
+  cackle();
+  const box=$('wbox'); let k=0;
+  const iv=setInterval(()=>{
+    if($('witch').hidden||k++>10){ clearInterval(iv); return; }
+    const sp=document.createElement('span'); sp.className='wha';
+    sp.textContent=pick(['HÁ!','HÁ HÁ!','HIHIHI!','MUAHAHA!']);
+    sp.style.cssText='left:'+rnd(-8,80)+'%;top:'+rnd(4,60)+'%;--r:'+rnd(-18,18)+'deg';
+    box.appendChild(sp); setTimeout(()=>sp.remove(),1600);
+  },260);
+  $('btnWitch').focus();
+}
+
+function show(name){
+  ['start','game','end'].forEach(s=>{ $(s).hidden=(s!==name); });$('hud').hidden=(name!=='game');
+  if(name!=='game') clearInterval(timer);
+}
+
+function updateHud(){
+  const q=st.Q[Math.min(st.idx,st.Q.length-1)];
+  if (st.mode === 'inf') {
+    $('hPhaseLbl').textContent='Capturas'; $('hPhase').textContent=st.ok; $('hPhaseTot').textContent='';
+  } else {
+    $('hPhaseLbl').textContent='Fase'; $('hPhase').textContent=q.phase+1; $('hPhaseTot').textContent='/4';
+  }
+  $('hScore').textContent=st.score;
+  $('hStreak').textContent=st.streak;
+  $('hStreakBox').classList.toggle('hot',st.streak>=3);
+  if (st.mode === 'inf') {
+    $('hLives').textContent=st.lives;
+  }
+}
+function drawDots(){
+  if(st.mode === 'inf') {
+    // mostra as últimas 20 respostas (verde = acerto, vermelho = erro) e a atual
+    let dotsHtml = '';
+    for(let i=Math.max(0,st.idx-19); i<=st.idx; i++){
+      const c = st.res[i]===true ? 'ok' : (st.res[i]===false ? 'no' : 'cur');
+      dotsHtml += '<i class="'+c+'"></i>';
+    }
+    $('dots').innerHTML = dotsHtml;
+  } else {
+    $('dots').innerHTML=st.Q.map((q,k)=>{
+      let c=''; if(st.res[k]===true) c='ok'; else if(st.res[k]===false) c='no'; else if(k===st.idx) c='cur';
+      return '<i class="'+c+'"></i>';
+    }).join('');
+  }
+}
+
+$('qcard').addEventListener('pointerdown',ev=>{ if(ev.pointerType==='touch'&&$('qcard').classList.contains('fog')) $('qcard').classList.add('seen'); });
+function startGame(mode){
+  $('startMsg').textContent='';
+  if(ONLINE){
+    if(!$('inNome').value.trim()){ $('startMsg').textContent='Digite seu nome ou apelido para jogar.'; $('inNome').focus(); return; }
+    if(!$('selTurma').value){ $('startMsg').textContent='Escolha a sua turma para entrar no ranking.'; $('selTurma').focus(); return; }
+    saveMe();
+  }
+  const nome=$('inNome').value.trim()||'Aluno(a)';
+  const equipe=$('inEquipe').value.trim();
+  st={nome:nome,equipe:equipe, mode:mode, lives: mode==='inf'?2:0, Q:null,visto:new Set(),bats:0,lastCurse:null,batTimer:null,idx:0,score:0,streak:0,ok:0,res:[],
+      ph:PHASES.map(()=>({ok:0,total:0})),locked:false,t0:0,id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),turma:(ONLINE?($('selTurma').value||''):'')};
+  
+  st.Q = mode==='inf' ? buildInfBatch(st.visto) : buildGame(mode);
+  $('btnStop').hidden = (mode !== 'inf');
+  resetStop();
+  $('hLivesBox').hidden = (mode !== 'inf');
+  
+  fxReset();
+  musicStart();
+  show('game');
+  go();
+}
+
+function go(){
+  if(st.idx>=st.Q.length){
+    if(st.mode==='inf') st.Q=st.Q.concat(buildInfBatch(st.visto));
+    else { finish(); return; }
+  }
+  const q=st.Q[st.idx];
+  updateHud(); drawDots();
+  if(q.first && !q.introShown){
+    q.introShown=true;
+    $('play').hidden=true; $('intro').hidden=false;
+    $('iNum').textContent='Fase '+(q.phase+1)+' de 4';
+    $('iName').textContent=PHASES[q.phase].name;
+    $('iDesc').textContent=PHASES[q.phase].desc;
+    $('btnGo').focus();
+    return;
+  }
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q=st.Q[st.idx];
+  $('intro').hidden=true; $('play').hidden=false;
+  $('phaseTag').textContent='Fase '+(q.phase+1)+' · '+PHASES[q.phase].name;
+  $('prompt').innerHTML=q.prompt;
+  const box=$('opts'); box.innerHTML='';
+  q.options.forEach((o,k)=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='opt';
+    b.innerHTML='<span class="key">'+(k+1)+'</span><span class="val">'+o.html+'</span>';
+    b.addEventListener('click',()=>answer(k));
+    box.appendChild(b);
+  });
+  clearCurses();
+  $('fb').hidden=true;
+  const g=$('ghost'); g.setAttribute('class','');
+  st.locked=false;
+  clearInterval(timer);
+  if(st.mode==='inf') applyCurses();
+  st.t0=Date.now();
+  
+}
+
+function answer(k){
+  if(st.locked) return;
+  st.locked=true; clearInterval(timer);
+  clearCurses();
+  const q=st.Q[st.idx];
+  const t=(Date.now()-st.t0)/1000;
+  const ok=!!q.options[k].correct;
+  const btns=$('opts').children;
+  
+  for(let j=0;j<btns.length;j++){
+    btns[j].disabled=true;
+    if(q.options[j].correct) btns[j].classList.add('ok');
+    else if(j===k) btns[j].classList.add('no');
+  }
+  
+  st.ph[q.phase].total++;
+  st.res[st.idx]=ok;
+  let pts=0, extra='';
+  
+  if(ok){
+    st.streak++; st.ok++; st.ph[q.phase].ok++;
+    const bonusTime = TLIMIT; 
+    const tb = Math.max(0, Math.round(150 * (1 - t/bonusTime))); 
+    const sb=Math.min(st.streak-1,5)*10;
+    pts=100+tb+sb; st.score+=pts;
+    extra='+'+pts+' pontos (100 + '+tb+' vel. + '+sb+' seq.)';
+    $('ghost').setAttribute('class','poof');
+    beep(660,.12,'triangle'); beep(880,.18,'triangle',.12);
+    streakFx(st.streak);
+  }else{
+    const antes=st.streak; st.streak=0;
+    if(antes>=3) streakLostFx(antes);
+    if (st.mode === 'inf') {
+      st.lives--;
+    }
+    extra='Sem pontos nesta. A alternativa certa está destacada em verde.';
+    $('ghost').setAttribute('class','laugh');
+    beep(180,.35,'sawtooth');
+  }
+  
+  const fb=$('fb');
+  fb.className='feedback '+(ok?'good':'bad');
+  $('fbTitle').textContent=ok?pick(['Fantasma capturado!','Mandou bem!','Isso aí!','Perfeito!']):pick(['Quase! O fantasma escapou.','Opa, essa escapou.','Por pouco!']);
+  $('fbText').innerHTML=q.explain;
+  $('fbPts').textContent=extra;
+  
+  let nextAction = 'Próximo desafio';
+  if (st.mode === 'normal' && st.idx === st.Q.length - 1) {
+    nextAction = 'Ver resultado';
+  } else if (st.mode === 'inf' && st.lives <= 0) {
+    nextAction = 'Ver resultado';
+  }
+  $('nextBtn').textContent = nextAction;
+  
+  fb.hidden=false;
+  updateHud(); drawDots();
+  $('nextBtn').focus();
+}
+
+function finish(){
+  clearInterval(timer);
+  musicStop(); clearCurses(); fxReset();
+  const entry={id:st.id,nome:st.nome,equipe:st.equipe,turma:st.turma,pontos:st.score,acertos:st.ok, mode:st.mode};
+  const list=loadRank(); list.push(entry);
+  list.sort((a,b)=>b.pontos-a.pontos);
+  saveRank(list.slice(0,60));
+  
+  const n=st.ok;
+  const respondidas = st.res.filter(v=>v!==undefined).length;
+  const maxQ = st.mode === 'inf' ? respondidas : st.Q.length;
+  const pct = n / Math.max(1,maxQ);
+  let stars= pct>=0.9?3:(pct>=0.7?2:(pct>=0.5?1:0));
+  if(st.mode==='inf') stars = n>=20?3:(n>=12?2:(n>=6?1:0));
+  
+  let title,msg;
+  if(st.mode === 'inf') {
+     const fim = st.lives<=0 ? 'As vidas acabaram. ' : 'Você encerrou a partida. ';
+     if(n >= 30) { title='Lenda Imortal'; msg=fim+n+' fantasmas capturados! Difícil de superar.'; }
+     else if(n >= 20) { title='Sobrevivente Lendário'; msg=fim+n+' fantasmas capturados. Impressionante!'; }
+     else if(n >= 12) { title='Caçador Veterano'; msg=fim+n+' fantasmas capturados. Dá para ir ainda mais longe!'; }
+     else if(n >= 6) { title='Caçador Aprendiz'; msg=fim+n+' fantasmas capturados. Jogue de novo e bata seu recorde!'; }
+     else { title='Fim da Linha'; msg=fim+'Você capturou '+n+' fantasmas. Releia as explicações e tente de novo!'; }
+  } else {
+    if(n>=19){ title='Caça-Fantasma Lendário'; msg='Quase nenhum fantasma escapou. Você domina as dízimas!'; }
+    else if(n>=16){ title='Mestre das Dízimas'; msg='Resultado excelente! Revise só os passos dos que escaparam.'; }
+    else if(n>=12){ title='Aprendiz de Bruxo'; msg='Bom caminho! Jogue de novo para fixar os noves e os zeros.'; }
+    else if(n>=8){ title='Fantasminha Curioso'; msg='Você já pegou o jeito de parte. Jogar de novo ajuda muito.'; }
+    else { title='Treino de Assombração'; msg='Tudo bem! Releia as explicações e tente outra vez, com calma.'; }
+  }
+
+  $('eWho').textContent=st.nome+(st.equipe?' · '+st.equipe:'');
+  $('eScore').textContent=st.score+' pontos';
+  $('eHits').textContent=n+' de '+maxQ+' desafios corretos (' + (st.mode==='inf'?'Modo Infinito':'Modo Clássico') + ')';
+  $('eStars').innerHTML=[0,1,2].map(k=>'<span class="'+(k<stars?'':'off')+'">★</span>').join('');
+  $('eTitle').textContent=title; $('eMsg').textContent=msg;
+  $('ePhases').innerHTML=PHASES.map((p,k)=>{
+    const s=st.ph[k], pc=s.total?Math.round(100*s.ok/s.total):0;
+    return '<div class="rowph"><span>'+(k+1)+'. '+p.name+'</span><span class="bar"><i style="width:'+pc+'%"></i></span><span>'+s.ok+'/'+s.total+'</span></div>';
+  }).join('');
+  if(ONLINE){
+    $('rankEndTitle').textContent='Ranking online · '+(st.mode==='inf'?'Modo Infinito':'Modo Clássico');
+    $('ePos').textContent=''; $('rankEnd').innerHTML='<div class="empty">Carregando…</div>';
+  } else { $('rankEndTitle').textContent='Ranking deste computador'; $('ePos').textContent=''; renderRank($('rankEnd'),st.id); }
+  show('end');
+  endOnline(entry);
+  beep(523,.15,'triangle'); beep(659,.15,'triangle',.15); beep(784,.3,'triangle',.3);
+}
+
+function home(){ musicStop(); renderBoards(); show('start'); if(ONLINE) fetchRanking(false); $('inNome').focus(); }
+
+$('btnPlayNormal').addEventListener('click', () => startGame('normal'));
+$('btnPlayInf').addEventListener('click', () => startGame('inf'));
+
+$('inNome').addEventListener('keydown',e=>{ if(e.key==='Enter') $('inEquipe').focus(); });
+$('inEquipe').addEventListener('keydown',e=>{ if(e.key==='Enter') startGame('normal'); });
+$('btnGo').addEventListener('click',renderQuestion);
+$('nextBtn').addEventListener('click',()=>{
+  if(st.mode === 'inf' && st.lives <= 0) {
+     showWitch();
+  } else {
+     st.idx++; go();
+  }
+});
+
+let stopTimer=null;
+function resetStop(){ clearTimeout(stopTimer); $('btnStop').textContent='Encerrar e salvar'; $('btnStop').dataset.armed=''; }
+$('btnStop').addEventListener('click',()=>{
+  const b=$('btnStop');
+  if(b.dataset.armed){ resetStop(); if(st&&st.mode==='inf') finish(); return; }
+  b.dataset.armed='1'; b.textContent='Clique de novo para encerrar';
+  stopTimer=setTimeout(resetStop,3000);
+});
+
+$('btnWitch').addEventListener('click',()=>{ $('witch').hidden=true; finish(); });
+$('btnHome').addEventListener('click',home);
+$('btnClear').addEventListener('click',()=>{
+  if(confirm('Apagar o ranking deste computador? (Os placares importados continuam.)')){ saveRank([]); renderBoards(); }
+});
+function paintMusicBtn(){ $('musicBtn').textContent='Música: '+(musicOn?'ligada':'desligada'); }
+paintMusicBtn();
+$('musicBtn').addEventListener('click',()=>{
+  musicOn=!musicOn; paintMusicBtn();
+  if(!musicOn) musicStop(); else if(st && !$('game').hidden) musicStart();
+});
+$('muteBtn').addEventListener('click',()=>{
+  muted=!muted; $('muteBtn').textContent='Som: '+(muted?'desligado':'ligado');
+});
+document.addEventListener('keydown',e=>{
+  if(!st||$('game').hidden||$('play').hidden||st.locked||st.bats>0) return;
+  const k=parseInt(e.key,10);
+  if(k>=1&&k<=4){
+    const q=st.Q[st.idx];
+    if(k<=q.options.length) answer(k-1);
+  }
+});
+
+if(ONLINE){
+  const T=$('selTurma'); TURMAS.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; T.appendChild(o); });
+  const eu=loadMe(); if(eu.nome) $('inNome').value=eu.nome; if(eu.equipe) $('inEquipe').value=eu.equipe;
+  if(eu.turma&&TURMAS.includes(eu.turma)) T.value=eu.turma;
+  $('turmaBox').hidden=false; $('nomeHint').hidden=false;
+  $('inNome').addEventListener('input',renderOnlineIfShown); $('inEquipe').addEventListener('input',renderOnlineIfShown); T.addEventListener('change',()=>{ renderOnlineIfShown(); });
+  window.addEventListener('online',()=>{ flushPending().then(()=>fetchRanking(true)); });
+  setInterval(()=>{ if(!$('start').hidden&&!document.hidden) fetchRanking(false); },60000);
+  flushPending().then(()=>fetchRanking(true));
+}
+renderBoards();
+$('btnExp').addEventListener('click',doExport);
+$('btnImp').addEventListener('click',()=>$('fileImp').click());
+$('fileImp').addEventListener('change',()=>{ const f=[...$('fileImp').files]; $('fileImp').value=''; if(f.length) doImport(f); });
+$('btnDelBoard').addEventListener('click',()=>{
+  if(boardSel==='local') return;
+  if(confirm('Remover o placar importado "'+boardSel+'" deste computador?')){ const imp=loadImp(); delete imp[boardSel]; saveImp(imp); boardSel='local'; renderBoards(); }
+});
+$('inTurma').addEventListener('input',()=>{ saveLbl($('inTurma').value); renderBoards(); });
+})();
+</script>
+</body>
+</html>
